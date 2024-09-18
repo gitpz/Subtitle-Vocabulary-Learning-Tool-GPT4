@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词学习</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+<!-- 加载提示 -->
+<div id="loadingOverlay">
+    <div id="loadingMessage">正在加载资源，请稍候...</div>
+</div>
+
+<!-- 使用说明区域 -->
+<section id="instructions">
+    <h2>网站使用说明</h2>
+    <p>本网站帮助用户通过字幕文件学习新单词，以下是具体操作步骤：</p>
+    <ol>
+        <li>点击“设置已掌握的单词”上传包含已掌握单词的文件。</li>
+        <li>上传字幕文件，系统将自动筛选出新单词。</li>
+        <li>通过页面导航按钮可以查看不同页的新单词。</li>
+        <li>点击单词可以查看详细解释并播放发音。</li>
+    </ol>
+</section>
+
+<!-- 设置已掌握的单词 -->
+<h2>设置已掌握的单词</h2>
+<input type="file" id="worldFile">
+<button onclick="processFile()">记录单词</button>
+<button onclick="removeStoredWords()">清除单词</button>
+
+<!-- 字幕搜索链接 -->
+<h2>字幕搜索</h2>
+<button onclick="window.open('https://assrt.net/')">伪射手字幕</button>
+
+<!-- 上传字幕文件 -->
+<h2>上传字幕或含新词汇文本 <span class="redFont">*</span></h2>
+<input type="file" id="subtitleFile">
+<button onclick="processSubtitle()">筛选新词</button>
+
+<!-- 单词列表和分页导航 -->
+<div id="wordList"></div>
+<div id="pagination">
+    <button id="prevPage" onclick="changePage(-1)" disabled>上一页</button>
+    <span id="currentPage" style="margin: 10px;">0/0</span>
+    <button id="nextPage" onclick="changePage(1)" disabled>下一页</button>
+    <!-- 跳转到指定页面的输入框和按钮 -->
+    <input type="number" id="pageInput" min="1" placeholder="页码">
+    <button onclick="goToPage()">跳转</button>
+</div>
+
+<!-- 模态框 -->
+<div id="alertModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <p id="modalMessage"></p>
+    </div>
+</div>
+
+<script src="./marked.min.js"></script>
+<script src="./script.js"></script>
+
+</body>
+</html>
