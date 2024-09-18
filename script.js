@@ -203,7 +203,7 @@ function makeExamplesPlayable(content) {
         // 检查句子是否包含3个或更多单词，并且包含英文句号
         if (/(\b\w+\b\s+){2,}\b\w+\b.*\./.test(text)) {
             item.classList.add('playable');
-            item.setAttribute('onclick', `rateLimitedPlayAudio('${text}')`);
+            item.setAttribute('onclick', `rateLimitedPlayAudio('${text.replace(/[^a-zA-Z0-9\s.,!?]/g, '')}')`);
         }
     });
 
