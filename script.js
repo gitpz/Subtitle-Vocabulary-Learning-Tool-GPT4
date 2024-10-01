@@ -8,7 +8,7 @@ let knownWordsText = []; // 存储用户已知的单词
 
 // 从 localStorage 移除保存的已知单词，并清空已知单词列表
 function removeStoredWords() {
-    currentWords = Array.from(new Set([ ...knownWordsText,...currentWords]));
+    currentWords = Array.from(new Set([...knownWordsText, ...currentWords]));
     localStorage.setItem('currentWords', JSON.stringify(currentWords));
     localStorage.removeItem('knownWordsText');
     knownWordsText = [];
@@ -84,11 +84,61 @@ function hideLoading() {
     overlay.style.display = 'none'; // 隐藏加载覆盖层
 }
 
-// 页面加载时从 data.json 中获取单词数据，然后尝试从 localStorage 加载 currentWords
+
+// IndexedDB 相关函数
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('WordDatabase', 1);
+        request.onerror = (event) => reject('IndexedDB error: ' + event.target.error);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore('wordData', {keyPath: 'id'});
+        };
+    });
+}
+
+function saveToIndexedDB(data) {
+    return openDB().then(db => {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(['wordData'], 'readwrite');
+            const store = transaction.objectStore('wordData');
+            const request = store.put({id: 'mainData', data: data});
+            request.onerror = (event) => reject('Error saving to IndexedDB: ' + event.target.error);
+            request.onsuccess = () => resolve();
+        });
+    });
+}
+
+function loadFromIndexedDB() {
+    return openDB().then(db => {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(['wordData'], 'readonly');
+            const store = transaction.objectStore('wordData');
+            const request = store.get('mainData');
+            request.onerror = (event) => reject('Error loading from IndexedDB: ' + event.target.error);
+            request.onsuccess = (event) => resolve(event.target.result ? event.target.result.data : null);
+        });
+    });
+}
+
+// 主要逻辑
 window.addEventListener('load', function () {
     showLoading('正在加载资源，请稍候...');
-    fetch('data.json')
-        .then(response => response.json())
+
+    loadFromIndexedDB()
+        .then(cachedData => {
+            if (cachedData) {
+                return cachedData;
+            } else {
+                return fetch('data.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        saveToIndexedDB(data);
+                        return data;
+                    });
+            }
+        })
         .then(data => {
             wordData = data; // 将加载的数据存储到 wordData 中
 
@@ -100,7 +150,7 @@ window.addEventListener('load', function () {
                 totalPages = Math.ceil(currentWords.length / wordsPerPage);
                 displayWords();
                 updatePagination();
-            }else {
+            } else {
                 fetch('word.json')
                     .then(response => {
                         if (!response.ok) {
@@ -126,7 +176,7 @@ window.addEventListener('load', function () {
             hideLoading(); // 加载完成后隐藏加载覆盖层
         })
         .catch(error => {
-            console.error('Error loading data.json:', error);
+            console.error('Error loading data:', error);
             showLoading('加载资源失败，请刷新页面重试。');
         });
 });
@@ -180,7 +230,7 @@ function processSubtitle() {
 
 // 显示当前页的单词列表
 function displayWords() {
-    setTimeout( ()=>{
+    setTimeout(() => {
         const wordList = document.getElementById('wordList');
         wordList.innerHTML = ''; // 清空单词列表
 
@@ -203,7 +253,7 @@ function displayWords() {
             }, true);
             wordList.appendChild(wordElement); // 将单词添加到列表
         });
-    },200 )
+    }, 200)
 }
 
 // 隐藏单词详细信息的 div
@@ -263,11 +313,11 @@ function playAudio(text) {
 
 // 更新分页控件
 function updatePagination() {
-    setTimeout(()=>{
+    setTimeout(() => {
         document.getElementById('currentPage').textContent = `${currentPage} / ${totalPages}`;
         document.getElementById('prevPage').disabled = currentPage === 1;
         document.getElementById('nextPage').disabled = currentPage === totalPages;
-    },200)
+    }, 200)
 }
 
 // 切换页面
@@ -321,7 +371,7 @@ function showModal(message) {
     modalMessage.textContent = message;
     modal.style.display = 'block'; // 显示模态框
 
-    modal.addEventListener('click', function(event) {
+    modal.addEventListener('click', function (event) {
         if (event.target === modal) {
             closeModal();
         }
