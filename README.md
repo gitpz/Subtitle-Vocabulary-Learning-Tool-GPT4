@@ -1,4 +1,4 @@
-# Subtitle-Vocabulary-Learning-Tool
+# Subtitle-Vocabulary-Learning-Tool-GPT4
 本网站帮助用户通过字幕文件学习新单词，涵盖了词义、例句、词根词缀、变形、文化背景、记忆技巧和小故事，系统会根据用户已掌握的单词筛选出未掌握的词汇，并为新单词提供详细解释和发音，提升词汇学习的效率。
 
 ## 功能特色
@@ -17,9 +17,11 @@ https://github.com/user-attachments/assets/0df17ae8-711d-46d8-a803-4ffca6a52a27
 ## 安装与运行
 1. 克隆此仓库：
     ```bash
-    git clone https://github.com/your-username/subtitle-vocabulary-learning.git
+    git clone https://github.com/gitpz/Subtitle-Vocabulary-Learning-Tool-GPT4.git
     ```
 2. 打开 `index.html` 文件，即可在浏览器中运行此项目。
+
+## 其它功能
 
 ## 参考
 本项目中的词汇来自 [DictionaryByGPT4](https://github.com/Ceelog/DictionaryByGPT4)，感谢该项目的贡献。

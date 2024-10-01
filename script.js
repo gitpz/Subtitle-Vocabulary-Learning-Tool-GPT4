@@ -1,4 +1,3 @@
-
 // 定义全局变量，用于存储单词数据、当前页面显示的单词等信息
 let wordData = []; // 存储从数据文件中加载的单词数据
 let currentWords = []; // 存储当前页面显示的单词
@@ -8,9 +7,13 @@ let totalPages = 1; // 总页数
 let knownWordsText = []; // 存储用户已知的单词
 
 // 从 localStorage 移除保存的已知单词，并清空已知单词列表
-function removeStoredWords(){
+function removeStoredWords() {
+    currentWords = Array.from(new Set([ ...knownWordsText,...currentWords]));
+    localStorage.setItem('currentWords', JSON.stringify(currentWords));
     localStorage.removeItem('knownWordsText');
     knownWordsText = [];
+    displayWords();
+    updatePagination();
     showModal('单词已从浏览器中移除');
 }
 
@@ -22,7 +25,7 @@ function processFile() {
     // 如果用户选择了文件，读取文件并处理
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(event) {
+        reader.onload = function (event) {
             const content = event.target.result;
 
             // 使用正则表达式提取所有单词，单词长度至少为3个字母
@@ -32,8 +35,11 @@ function processFile() {
                 // 去除重复的单词并转换为小写
                 knownWordsText = [...new Set(words.map(word => word.toLowerCase()))];
 
+                currentWords = currentWords.filter(word => !knownWordsText.includes(word));
+
                 // 保存单词列表到 localStorage
                 localStorage.setItem('knownWordsText', JSON.stringify(knownWordsText));
+                localStorage.setItem('currentWords', JSON.stringify(currentWords));
 
                 showModal('单词已成功保存到浏览器！');
                 console.log('保存的单词列表:', knownWordsText);
@@ -42,7 +48,7 @@ function processFile() {
             }
         };
 
-        reader.onerror = function() {
+        reader.onerror = function () {
             showModal('文件读取出错');
         };
 
@@ -60,6 +66,8 @@ function processFile() {
             showModal('浏览器中没有找到任何单词，请先上传文件进行处理。');
         }
     }
+    displayWords();
+    updatePagination();
 }
 
 // 显示加载中信息
@@ -76,13 +84,45 @@ function hideLoading() {
     overlay.style.display = 'none'; // 隐藏加载覆盖层
 }
 
-// 页面加载时从 data.json 中获取单词数据
+// 页面加载时从 data.json 中获取单词数据，然后尝试从 localStorage 加载 currentWords
 window.addEventListener('load', function () {
     showLoading('正在加载资源，请稍候...');
     fetch('data.json')
         .then(response => response.json())
         .then(data => {
             wordData = data; // 将加载的数据存储到 wordData 中
+
+            // 尝试从 localStorage 加载 currentWords
+            const storedCurrentWords = localStorage.getItem('currentWords');
+            if (storedCurrentWords) {
+                currentWords = JSON.parse(storedCurrentWords);
+                currentPage = parseInt(localStorage.getItem('currentPage')) || 1;
+                totalPages = Math.ceil(currentWords.length / wordsPerPage);
+                displayWords();
+                updatePagination();
+            }else {
+                fetch('word.json')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        currentWords = data;
+                        localStorage.setItem('currentWords', JSON.stringify(currentWords));
+                        currentPage = 1;
+                        localStorage.setItem('currentPage', currentPage);
+                        totalPages = Math.ceil(currentWords.length / wordsPerPage);
+                        displayWords();
+                        updatePagination();
+                    })
+                    .catch(error => {
+                        console.error('Error loading word.json:', error);
+                        // 可以在这里添加错误处理逻辑，比如显示错误消息给用户
+                    });
+            }
+
             hideLoading(); // 加载完成后隐藏加载覆盖层
         })
         .catch(error => {
@@ -121,6 +161,9 @@ function processSubtitle() {
                 return 0;
             });
 
+            // 将 currentWords 存储到 localStorage
+            localStorage.setItem('currentWords', JSON.stringify(currentWords));
+
             currentPage = 1;
             totalPages = Math.ceil(currentWords.length / wordsPerPage); // 计算总页数
             displayWords(); // 显示单词
@@ -132,34 +175,35 @@ function processSubtitle() {
             hideLoading(); // 隐藏加载覆盖层
         };
         reader.readAsText(file); // 读取字幕文件
-    }, 200); // 0 毫秒延迟确保 showLoading 有时间显示
+    }, 200); // 200 毫秒延迟确保 showLoading 有时间显示
 }
-
 
 // 显示当前页的单词列表
 function displayWords() {
-    const wordList = document.getElementById('wordList');
-    wordList.innerHTML = ''; // 清空单词列表
+    setTimeout( ()=>{
+        const wordList = document.getElementById('wordList');
+        wordList.innerHTML = ''; // 清空单词列表
 
-    const startIndex = (currentPage - 1) * wordsPerPage;
-    const endIndex = startIndex + wordsPerPage;
-    const pageWords = currentWords.slice(startIndex, endIndex); // 获取当前页的单词
+        const startIndex = (currentPage - 1) * wordsPerPage;
+        const endIndex = startIndex + wordsPerPage;
+        const pageWords = currentWords.slice(startIndex, endIndex); // 获取当前页的单词
 
-    // 为每个单词创建 DOM 元素并添加到页面
-    pageWords.forEach(word => {
-        const wordElement = document.createElement('div');
-        wordElement.className = 'word-item';
-        const wordInData = wordData.some(item => item.word.toLowerCase() === word);
-        wordElement.innerHTML = `
+        // 为每个单词创建 DOM 元素并添加到页面
+        pageWords.forEach(word => {
+            const wordElement = document.createElement('div');
+            wordElement.className = 'word-item';
+            const wordInData = wordData.some(item => item.word.toLowerCase() === word);
+            wordElement.innerHTML = `
                     <h3 class="playable" onclick="rateLimitedPlayAudio('${word}')">${word}${wordInData ? ' ★' : ''}</h3>
                     <button onclick="hideDiv(event, this)" class="floatRight">展开</button>
                     <div class="word-content"></div>
                 `;
-        wordElement.addEventListener('click', function(event) {
-            toggleWordContent(this, word); // 单击时切换单词详细信息
-        }, true);
-        wordList.appendChild(wordElement); // 将单词添加到列表
-    });
+            wordElement.addEventListener('click', function (event) {
+                toggleWordContent(this, word); // 单击时切换单词详细信息
+            }, true);
+            wordList.appendChild(wordElement); // 将单词添加到列表
+        });
+    },200 )
 }
 
 // 隐藏单词详细信息的 div
@@ -169,7 +213,7 @@ function hideDiv(event, span) {
     if (nextDiv.style.display === 'block') {
         nextDiv.style.display = 'none'; // 隐藏详细信息 div
         span.textContent = '展开';
-    }else {
+    } else {
         nextDiv.style.display = 'block'; // 隐藏详细信息 div
         span.textContent = '折叠';
     }
@@ -207,7 +251,6 @@ function makeExamplesPlayable(content) {
         }
     });
 
-
     return doc.body.innerHTML;
 }
 
@@ -220,9 +263,11 @@ function playAudio(text) {
 
 // 更新分页控件
 function updatePagination() {
-    document.getElementById('currentPage').textContent = `${currentPage} / ${totalPages}`;
-    document.getElementById('prevPage').disabled = currentPage === 1;
-    document.getElementById('nextPage').disabled = currentPage === totalPages;
+    setTimeout(()=>{
+        document.getElementById('currentPage').textContent = `${currentPage} / ${totalPages}`;
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages;
+    },200)
 }
 
 // 切换页面
@@ -230,6 +275,7 @@ function changePage(delta) {
     currentPage += delta;
     displayWords(); // 切换页面后更新显示的单词
     updatePagination(); // 更新分页控件
+    localStorage.setItem('currentPage', currentPage.toString());
 }
 
 // 创建限速函数，防止短时间内多次调用音频播放功能
@@ -237,7 +283,7 @@ function createRateLimitedFunction(fn, limit = 500) {
     let lastCall = 0;
     let timeoutId = null;
 
-    return function(...args) {
+    return function (...args) {
         const now = Date.now();
 
         if (now - lastCall < limit) {
@@ -260,6 +306,7 @@ function goToPage() {
         currentPage = pageNumber; // 设置当前页码
         displayWords(); // 显示单词
         updatePagination(); // 更新分页
+        localStorage.setItem('currentPage', currentPage.toString());
     } else {
         showModal('请输入有效的页码');
     }
