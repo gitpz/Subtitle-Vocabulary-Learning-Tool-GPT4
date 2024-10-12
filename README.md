@@ -12,7 +12,7 @@
 3. **查看和学习新单词**：通过导航按钮浏览新单词，点击单词查看详细解释并播放发音。
 
 ## 视频预览
-https://github.com/user-attachments/assets/c4d564b2-a183-4a39-a985-48ff84f86e6d
+https://github.com/user-attachments/assets/9792ce3a-cb1f-46c0-9d2c-e29873974fcd
 
 ## 安装与运行
 1. 克隆此仓库：
